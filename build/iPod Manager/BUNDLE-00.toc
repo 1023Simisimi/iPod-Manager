@@ -1,0 +1,3 @@
+([('iPod Manager',
+   '/Users/achlam/Desktop/ipod-manager/dist/iPod Manager',
+   'EXECUTABLE')],)

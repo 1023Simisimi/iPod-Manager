@@ -355,7 +355,41 @@
     footer a { color: var(--dim); text-decoration: none; }
     footer a:hover { color: var(--white); }
 
+    /* Ko-fi */
+    .kofi-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 60px 48px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+    }
+    .kofi-text h2 {
+      font-family: var(--serif);
+      font-size: clamp(24px, 3vw, 36px);
+      margin-bottom: 10px;
+    }
+    .kofi-text p { color: var(--dim); font-size: 15px; max-width: 400px; line-height: 1.6; }
+    .kofi-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: #ff5e5b;
+      color: #fff;
+      padding: 14px 28px; border-radius: 999px;
+      font-size: 15px; font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: opacity .2s, transform .2s;
+      box-shadow: 0 4px 20px rgba(255,94,91,.3);
+    }
+    .kofi-btn:hover { opacity: .9; transform: translateY(-1px); }
+
     @media (max-width: 768px) {
+      .kofi-section { flex-direction: column; text-align: center; padding: 48px 20px; }
+      .kofi-text p { max-width: 100%; }
+
       nav { padding: 16px 20px; }
       .nav-links { display: none; }
       .hero { grid-template-columns: 1fr; padding: 60px 20px 40px; gap: 40px; }
@@ -506,6 +540,17 @@
     &nbsp;·&nbsp;
     Works with iPod Classic, Nano, Mini (2004–2012).
   </p>
+</section>
+
+<!-- Ko-fi -->
+<section class="kofi-section">
+  <div class="kofi-text">
+    <h2>Buy me a coffee ☕</h2>
+    <p>iPod Manager is free and always will be. If it saved your music collection or brought your old iPod back to life, a small donation means a lot.</p>
+  </div>
+  <a href="https://ko-fi.com/abslmh" target="_blank" class="kofi-btn">
+    ☕ Support on Ko-fi
+  </a>
 </section>
 
 <footer>
