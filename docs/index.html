@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iPod Manager — Free Mac App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --black:   #0a0a0a;
+      --white:   #f0ede8;
+      --green:   #c8ff57;
+      --dim:     #5a5a5a;
+      --border:  #1e1e1e;
+      --card:    #111111;
+      --serif:   'Instrument Serif', Georgia, serif;
+      --sans:    'Space Grotesk', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: rgba(10,10,10,.92);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 600; font-size: 15px; letter-spacing: -.2px;
+    }
+
+    .nav-logo .dot {
+      width: 28px; height: 28px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a {
+      color: var(--dim); text-decoration: none;
+      font-size: 14px; font-weight: 400;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--white); }
+
+    .nav-cta {
+      background: var(--green); color: #000;
+      padding: 8px 18px; border-radius: 999px;
+      font-size: 13px; font-weight: 600;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+    .nav-cta:hover { opacity: .85; }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 120px 48px 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(42px, 5vw, 68px);
+      line-height: 1.05;
+      letter-spacing: -.5px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--green);
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      color: var(--dim);
+      line-height: 1.7;
+      max-width: 420px;
+      margin-bottom: 40px;
+    }
+
+    .hero-actions { display: flex; align-items: center; gap: 16px; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green); color: #000;
+      padding: 14px 28px; border-radius: 999px;
+      font-size: 15px; font-weight: 600;
+      text-decoration: none;
+      transition: opacity .2s, transform .2s;
+    }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--dim); font-size: 14px;
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .btn-ghost:hover { color: var(--white); }
+
+    /* iPod mockup */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .ipod-mockup {
+      width: 200px;
+      background: linear-gradient(160deg, #2a2a2a, #1a1a1a);
+      border-radius: 28px;
+      padding: 20px;
+      border: 1px solid #333;
+      box-shadow: 0 40px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05);
+      position: relative;
+    }
+
+    .ipod-screen {
+      background: #0a0a0a;
+      border-radius: 10px;
+      height: 140px;
+      margin-bottom: 20px;
+      border: 1px solid #222;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 6px;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .ipod-now-playing {
+      font-size: 9px;
+      color: var(--green);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+    }
+
+    .ipod-track { font-size: 11px; font-weight: 600; color: var(--white); text-align: center; }
+    .ipod-artist { font-size: 9px; color: #666; text-align: center; }
+
+    .ipod-progress {
+      width: 100%; height: 2px;
+      background: #222; border-radius: 1px; margin-top: 8px; overflow: hidden;
+    }
+    .ipod-progress-fill {
+      height: 100%; width: 40%;
+      background: var(--green); border-radius: 1px;
+      animation: progress 3s ease-in-out infinite alternate;
+    }
+    @keyframes progress { to { width: 75%; } }
+
+    .ipod-wheel {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #3a3a3a, #222);
+      border: 1px solid #333;
+      margin: 0 auto;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,.5);
+      position: relative;
+    }
+
+    .ipod-center {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      border: 1px solid #333;
+    }
+
+    .ipod-wheel-label {
+      position: absolute;
+      font-size: 7px; color: #555;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .ipod-wheel-label.top    { top: 10px; }
+    .ipod-wheel-label.bottom { bottom: 10px; }
+    .ipod-wheel-label.left   { left: 8px; }
+    .ipod-wheel-label.right  { right: 8px; }
+
+    /* floating badge */
+    .floating-badge {
+      position: absolute;
+      top: -16px; right: -16px;
+      background: var(--green);
+      color: #000;
+      font-size: 10px; font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
+    }
+
+    /* ── Features ── */
+    .features {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 48px;
+      border-top: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--dim); margin-bottom: 48px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+
+    .feature-card {
+      background: var(--card);
+      padding: 32px;
+      transition: background .2s;
+    }
+    .feature-card:hover { background: #161616; }
+    .feature-card:first-child { border-radius: 12px 0 0 12px; }
+    .feature-card:last-child  { border-radius: 0 12px 12px 0; }
+
+    .feature-icon {
+      font-size: 28px; margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 16px; font-weight: 600;
+      margin-bottom: 8px; letter-spacing: -.2px;
+    }
+
+    .feature-card p {
+      font-size: 14px; color: var(--dim); line-height: 1.6;
+    }
+
+    /* ── How it works ── */
+    .how {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 48px;
+      border-top: 1px solid var(--border);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px;
+      margin-top: 48px;
+    }
+
+    .step-num {
+      font-family: var(--serif);
+      font-size: 48px;
+      color: #222;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .step h3 {
+      font-size: 15px; font-weight: 600; margin-bottom: 6px;
+    }
+
+    .step p { font-size: 13px; color: var(--dim); line-height: 1.6; }
+
+    /* ── Download ── */
+    .download {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 48px 120px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .download h2 {
+      font-family: var(--serif);
+      font-size: clamp(32px, 4vw, 52px);
+      margin-bottom: 16px;
+    }
+
+    .download p { color: var(--dim); font-size: 16px; margin-bottom: 40px; }
+
+    .download-box {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 48px;
+    }
+
+    .download-box .platform {
+      font-size: 12px; color: var(--dim);
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+
+    .req {
+      font-size: 12px; color: var(--dim);
+      margin-top: 16px; line-height: 1.8;
+    }
+
+    .req a { color: var(--green); text-decoration: none; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; color: var(--dim);
+    }
+
+    footer a { color: var(--dim); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; padding: 60px 20px 40px; gap: 40px; }
+      .hero-visual { order: -1; }
+      .features-grid { grid-template-columns: 1fr; }
+      .feature-card:first-child { border-radius: 12px 12px 0 0; }
+      .feature-card:last-child  { border-radius: 0 0 12px 12px; }
+      .steps { grid-template-columns: 1fr 1fr; }
+      .features, .how, .download { padding: 48px 20px; }
+      footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="dot">🎵</div>
+    iPod Manager
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="https://github.com/1023Simisimi/iPod-Manager" target="_blank">GitHub</a>
+  </div>
+  <a href="#download" class="nav-cta">Download free</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-text">
+    <div class="hero-eyebrow">Free & open source</div>
+    <h1>Your old iPod,<br /><em>back to life.</em></h1>
+    <p class="hero-sub">Browse your library, add new songs, convert any format, and download straight from YouTube — all from a clean local app. No iTunes required.</p>
+    <div class="hero-actions">
+      <a href="#download" class="btn-primary">
+        ⬇ Download for Mac
+      </a>
+      <a href="https://github.com/1023Simisimi/iPod-Manager" target="_blank" class="btn-ghost">
+        View on GitHub →
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="ipod-mockup">
+      <div class="floating-badge">916 songs loaded ✓</div>
+      <div class="ipod-screen">
+        <div class="ipod-now-playing">Now Playing</div>
+        <div class="ipod-track">Someone Like You</div>
+        <div class="ipod-artist">Adele</div>
+        <div class="ipod-progress">
+          <div class="ipod-progress-fill"></div>
+        </div>
+      </div>
+      <div class="ipod-wheel">
+        <span class="ipod-wheel-label top">MENU</span>
+        <span class="ipod-wheel-label bottom">▶|◀</span>
+        <span class="ipod-wheel-label left">◀◀</span>
+        <span class="ipod-wheel-label right">▶▶</span>
+        <div class="ipod-center"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="section-label">What it does</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🎵</div>
+      <h3>Browse your library</h3>
+      <p>See every song on your iPod with real track names, artists, and albums. Search and sort instantly.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📂</div>
+      <h3>Add any audio file</h3>
+      <p>Drag and drop MP3, FLAC, WAV, OGG, WMA, AIFF, or OPUS files. Non-native formats are auto-converted.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">▶</div>
+      <h3>Download from YouTube</h3>
+      <p>Paste any YouTube link and the song is downloaded, converted to MP3, and added to your iPod in one click.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔊</div>
+      <h3>Play songs in the browser</h3>
+      <p>Stream any track from your iPod directly in the app with a full playback bar — play, pause, skip, scrub.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚙</div>
+      <h3>Auto format conversion</h3>
+      <p>FFmpeg converts anything to AAC automatically. You never need to think about whether a file will work.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Fully local & private</h3>
+      <p>Runs entirely on your Mac. No accounts, no cloud, no data sent anywhere. Your music stays yours.</p>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how" id="how">
+  <div class="section-label">How it works</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Download the app</h3>
+      <p>Download the Mac app below and move it to your Applications folder.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Plug in your iPod</h3>
+      <p>Connect your iPod via USB. Enable "Manually manage music" in Finder if prompted.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Double-click to open</h3>
+      <p>The app opens your browser automatically at localhost:5050. Click Detect iPod.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>Add your music</h3>
+      <p>Drag files in, paste YouTube links, or browse what's already on your iPod.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Download -->
+<section class="download" id="download">
+  <h2>Free download</h2>
+  <p>Open source. No sign-up. Works on any Mac.</p>
+
+  <div class="download-box">
+    <div class="platform">macOS · Apple Silicon & Intel</div>
+    <a href="https://github.com/1023Simisimi/iPod-Manager/releases/latest/download/iPodManager.app.zip"
+       class="btn-primary" style="font-size:16px; padding:16px 36px;">
+      ⬇ Download iPod Manager
+    </a>
+    <div style="font-size:12px; color:var(--dim)">Free · Always will be</div>
+  </div>
+
+  <p class="req">
+    Requires macOS 12+, Python 3.10+, and FFmpeg.<br />
+    Full setup guide on <a href="https://github.com/1023Simisimi/iPod-Manager#readme">GitHub</a>.
+    &nbsp;·&nbsp;
+    Works with iPod Classic, Nano, Mini (2004–2012).
+  </p>
+</section>
+
+<footer>
+  <div>© 2026 iPod Manager · Free & open source</div>
+  <div>
+    <a href="https://github.com/1023Simisimi/iPod-Manager" target="_blank">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/1023Simisimi/iPod-Manager/issues" target="_blank">Report a bug</a>
+  </div>
+</footer>
+
+</body>
+</html>
