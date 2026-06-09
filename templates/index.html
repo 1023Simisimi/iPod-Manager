@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iPod Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #0d0d0f;
+      --surface: #141416;
+      --card:    #1a1a1e;
+      --border:  #2a2a30;
+      --muted:   #3a3a44;
+      --text:    #e8e8ec;
+      --sub:     #888898;
+      --accent:  #c8ff57;
+      --accent2: #57c8ff;
+      --danger:  #ff5757;
+      --warn:    #ffb347;
+      --r:       10px;
+      --mono:    'DM Mono', monospace;
+      --sans:    'DM Sans', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    header { display: flex; align-items: center; gap: 14px; padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .logo { width: 32px; height: 32px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    header h1 { font-size: 16px; font-weight: 600; }
+    header h1 span { color: var(--accent); }
+    .pill { font-family: var(--mono); font-size: 11px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--muted); color: var(--sub); }
+    .pill.connected { border-color: var(--accent); color: var(--accent); }
+    .header-right { margin-left: auto; }
+
+    /* ── Layout ── */
+    .shell { display: grid; grid-template-columns: 280px 1fr; flex: 1; min-height: 0; }
+
+    /* ── Sidebar ── */
+    aside { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .ss { padding: 16px; border-bottom: 1px solid var(--border); }
+    .lbl { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--sub); margin-bottom: 10px; }
+
+    .detect-btn { width: 100%; background: var(--accent); color: #000; border: none; border-radius: var(--r); padding: 9px 14px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+    .detect-btn:hover { opacity: .85; }
+    .detect-btn:disabled { opacity: .4; cursor: default; }
+
+    .ipod-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 12px; margin-top: 8px; cursor: pointer; transition: border-color .15s; }
+    .ipod-card:hover { border-color: var(--accent); }
+    .ipod-card.active { border-color: var(--accent); background: #1e2416; }
+    .ipod-card .name { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+    .ipod-card .meta { font-family: var(--mono); font-size: 11px; color: var(--sub); }
+
+    .mount-input { display: flex; gap: 6px; margin-top: 8px; }
+    .mount-input input { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 7px 9px; color: var(--text); font-family: var(--mono); font-size: 11px; outline: none; }
+    .mount-input input:focus { border-color: var(--accent2); }
+    .mount-input button { background: var(--muted); color: var(--text); border: none; border-radius: var(--r); padding: 7px 11px; cursor: pointer; font-size: 12px; transition: background .15s; }
+    .mount-input button:hover { background: var(--accent2); color: #000; }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; }
+    .stat-box .val { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--accent); }
+    .stat-box .slbl { font-size: 10px; color: var(--sub); text-transform: uppercase; letter-spacing: .8px; margin-top: 1px; }
+
+    /* drop zone */
+    .drop-zone { border: 2px dashed var(--muted); border-radius: var(--r); padding: 18px 14px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
+    .drop-zone.hovering { border-color: var(--accent); background: rgba(200,255,87,.05); }
+    .drop-zone .icon { font-size: 24px; margin-bottom: 6px; }
+    .drop-zone p { font-size: 12px; color: var(--sub); line-height: 1.5; }
+    .drop-zone strong { color: var(--text); }
+    .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    .queue { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .queue-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+    .queue-item .fn { font-family: var(--mono); font-size: 11px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+    .queue-item .qmeta { display: flex; align-items: center; gap: 5px; }
+    .badge { font-size: 9px; font-family: var(--mono); padding: 2px 5px; border-radius: 4px; text-transform: uppercase; letter-spacing: .5px; }
+    .badge.convert   { background: rgba(255,179,71,.15); color: var(--warn); border: 1px solid var(--warn); }
+    .badge.native    { background: rgba(200,255,87,.1);  color: var(--accent); border: 1px solid var(--accent); }
+    .badge.done      { background: rgba(87,200,255,.1);  color: var(--accent2); border: 1px solid var(--accent2); }
+    .badge.error     { background: rgba(255,87,87,.1);  color: var(--danger); border: 1px solid var(--danger); }
+    .badge.uploading { background: rgba(255,255,255,.05); color: var(--sub); border: 1px solid var(--muted); }
+
+    .upload-btn { width: 100%; background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: var(--r); padding: 8px; cursor: pointer; font-size: 12px; font-weight: 500; margin-top: 7px; transition: background .15s; }
+    .upload-btn:hover { background: rgba(200,255,87,.1); }
+    .upload-btn:disabled { opacity: .4; cursor: default; }
+    .yt-wrap { margin-top: 10px; }
+    .yt-input-row { display: flex; gap: 6px; margin-top: 6px; }
+    .yt-input-row input { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 7px 9px; color: var(--text); font-family: var(--mono); font-size: 11px; outline: none; min-width: 0; }
+    .yt-input-row input:focus { border-color: #ff4444; }
+    .yt-input-row input::placeholder { color: var(--sub); }
+    .yt-btn { background: #ff4444; color: #fff; border: none; border-radius: var(--r); padding: 7px 11px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap; transition: opacity .15s; }
+    .yt-btn:hover { opacity: .85; }
+    .yt-btn:disabled { opacity: .4; cursor: default; }
+    .yt-status { font-size: 11px; font-family: var(--mono); margin-top: 6px; padding: 7px 10px; border-radius: 7px; display: none; }
+    .yt-status.loading { display: block; color: var(--warn); background: rgba(255,179,71,.1); border: 1px solid var(--warn); }
+    .yt-status.success { display: block; color: var(--accent); background: rgba(200,255,87,.1); border: 1px solid var(--accent); }
+    .yt-status.error   { display: block; color: var(--danger); background: rgba(255,87,87,.1); border: 1px solid var(--danger); }
+
+    /* ── Main ── */
+    main { display: flex; flex-direction: column; overflow: hidden; }
+
+    .toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .search-wrap { flex: 1; position: relative; }
+    .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: var(--sub); }
+    .search-wrap input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 7px 11px 7px 29px; color: var(--text); font-size: 13px; outline: none; }
+    .search-wrap input:focus { border-color: var(--accent2); }
+    .search-wrap input::placeholder { color: var(--sub); }
+    .refresh-btn { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 7px 11px; color: var(--sub); cursor: pointer; font-size: 13px; transition: color .15s, border-color .15s; }
+    .refresh-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    .table-wrap { flex: 1; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { position: sticky; top: 0; background: var(--surface); border-bottom: 1px solid var(--border); padding: 9px 12px; text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); font-weight: 400; cursor: pointer; user-select: none; white-space: nowrap; }
+    thead th:hover { color: var(--text); }
+    thead th.sorted { color: var(--accent); }
+    tbody tr { border-bottom: 1px solid rgba(42,42,48,.5); transition: background .1s; cursor: pointer; }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    tbody tr.playing { background: rgba(200,255,87,.07); }
+    tbody td { padding: 8px 12px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
+    .col-play  { width: 36px; text-align: center; }
+    .col-title { width: 28%; }
+    .col-artist{ width: 22%; color: var(--sub); }
+    .col-album { width: 22%; color: var(--muted); }
+    .col-dur   { width: 60px; font-family: var(--mono); font-size: 11px; color: var(--sub); text-align: right; }
+    .col-type  { width: 50px; }
+    .col-del   { width: 36px; text-align: center; }
+
+    .play-btn { background: none; border: none; color: var(--sub); cursor: pointer; font-size: 13px; padding: 2px 5px; border-radius: 4px; transition: color .15s; }
+    .play-btn:hover { color: var(--accent); }
+    .play-btn.active { color: var(--accent); }
+    .del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 5px; border-radius: 4px; transition: color .15s, background .15s; }
+    .del-btn:hover { color: var(--danger); background: rgba(255,87,87,.1); }
+
+    /* ── Now Playing Bar ── */
+    #player-bar {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 20px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      position: relative;
+    }
+    #player-bar.visible { display: flex; }
+    .np-art { width: 36px; height: 36px; background: var(--card); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1px solid var(--border); }
+    .np-info { flex: 1; min-width: 0; }
+    .np-title  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .np-artist { font-size: 11px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .np-controls { display: flex; align-items: center; gap: 8px; }
+    .ctrl-btn { background: none; border: none; color: var(--sub); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; transition: color .15s; line-height: 1; }
+    .ctrl-btn:hover { color: var(--text); }
+    .ctrl-btn.big { font-size: 22px; color: var(--text); }
+    .ctrl-btn.big:hover { color: var(--accent); }
+    .np-progress { flex: 2; display: flex; align-items: center; gap: 8px; }
+    .np-time { font-family: var(--mono); font-size: 11px; color: var(--sub); white-space: nowrap; }
+    .progress-track { flex: 1; height: 3px; background: var(--muted); border-radius: 2px; cursor: pointer; position: relative; }
+    .progress-fill  { height: 100%; background: var(--accent); border-radius: 2px; pointer-events: none; transition: width .3s linear; }
+    .vol-wrap { display: flex; align-items: center; gap: 6px; }
+    .vol-slider { -webkit-appearance: none; width: 72px; height: 3px; background: var(--muted); border-radius: 2px; outline: none; cursor: pointer; }
+    .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+
+    /* ── Empty ── */
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--sub); text-align: center; padding: 40px; }
+    .empty-state .big { font-size: 44px; }
+    .empty-state h2 { font-size: 15px; font-weight: 500; color: var(--text); }
+    .empty-state p  { font-size: 13px; max-width: 300px; line-height: 1.6; }
+
+    /* ── Toast ── */
+    #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 18px; font-size: 13px; box-shadow: 0 8px 32px rgba(0,0,0,.5); transition: transform .3s cubic-bezier(.34,1.56,.64,1); z-index: 999; white-space: nowrap; }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+    #toast.error   { border-color: var(--danger); color: var(--danger); }
+    #toast.info    { border-color: var(--accent2); color: var(--accent2); }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🎵</div>
+  <h1>iPod <span>Manager</span></h1>
+  <div class="header-right">
+    <span class="pill" id="conn-pill">No iPod connected</span>
+  </div>
+</header>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside>
+    <div class="ss">
+      <div class="lbl">Device</div>
+      <button class="detect-btn" id="detectBtn" onclick="detectIpods()">🔍 Detect iPod</button>
+      <div id="ipodList"></div>
+      <div class="lbl" style="margin-top:12px;">Manual mount path</div>
+      <div class="mount-input">
+        <input type="text" id="manualMount" placeholder="/Volumes/ABS" />
+        <button onclick="setManualMount()">Set</button>
+      </div>
+    </div>
+
+    <div class="ss" id="statsSection" style="display:none">
+      <div class="lbl">Library</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="val" id="statTracks">—</div><div class="slbl">Tracks</div></div>
+        <div class="stat-box"><div class="val" id="statArtists">—</div><div class="slbl">Artists</div></div>
+        <div class="stat-box"><div class="val" id="statAlbums">—</div><div class="slbl">Albums</div></div>
+        <div class="stat-box"><div class="val" id="statDuration">—</div><div class="slbl">Total Time</div></div>
+      </div>
+    </div>
+
+    <div class="ss" style="flex:1;overflow-y:auto;">
+      <div class="lbl">Add Songs</div>
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">📂</div>
+        <p><strong>Drop audio files here</strong><br/>or click to browse<br/>
+        <span style="font-size:10px;color:var(--muted)">MP3 · M4A · FLAC · WAV · OGG · WMA · AIFF · OPUS</span></p>
+        <input type="file" id="fileInput" multiple
+               accept=".mp3,.m4a,.aac,.flac,.wav,.ogg,.wma,.aiff,.opus"
+               onchange="handleFiles(this.files)" />
+      </div>
+      <div class="queue" id="queue"></div>
+      <button class="upload-btn" id="uploadBtn" style="display:none" onclick="uploadAll()">⬆ Add All to iPod</button>
+      <div class="yt-wrap">
+        <div class="lbl" style="margin-top:14px;">&#x25B6; Add from YouTube</div>
+        <div class="yt-input-row">
+          <input type="text" id="ytUrl" placeholder="Paste YouTube URL&hellip;" />
+          <button class="yt-btn" id="ytBtn" onclick="addFromYoutube()">Add</button>
+        </div>
+        <div class="yt-status" id="ytStatus"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main>
+    <div class="toolbar" id="toolbar" style="display:none">
+      <div class="search-wrap">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/></svg>
+        <input type="text" id="searchInput" placeholder="Search title, artist, album…" oninput="applyFilter()" />
+      </div>
+      <button class="refresh-btn" onclick="loadLibrary()">↺ Refresh</button>
+    </div>
+    <div id="mainPanel">
+      <div class="empty-state">
+        <div class="big">🎧</div>
+        <h2>Connect your iPod</h2>
+        <p>Plug in your iPod via USB, then click <strong>Detect iPod</strong> or enter the mount path manually.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Now Playing Bar -->
+<div id="player-bar">
+  <div class="np-art">🎵</div>
+  <div class="np-info">
+    <div class="np-title" id="np-title">—</div>
+    <div class="np-artist" id="np-artist">—</div>
+  </div>
+  <div class="np-controls">
+    <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
+    <button class="ctrl-btn big" id="playPauseBtn" onclick="togglePlay()">▶</button>
+    <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
+  </div>
+  <div class="np-progress">
+    <span class="np-time" id="np-current">0:00</span>
+    <div class="progress-track" id="progressTrack" onclick="seekTo(event)">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <span class="np-time" id="np-total">0:00</span>
+  </div>
+  <div class="vol-wrap">
+    🔈
+    <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.02" value="1"
+           oninput="setVolume(this.value)" />
+  </div>
+</div>
+
+<div id="toast"></div>
+<audio id="audioEl"></audio>
+
+<script>
+let currentMount = null;
+let allTracks = [];
+let filteredTracks = [];
+let sortKey = 'artist';
+let sortDir = 1;
+let uploadQueue = [];
+let currentTrackIdx = -1;
+let isPlaying = false;
+
+const audio = document.getElementById('audioEl');
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastT;
+function toast(msg, type='info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.className = '', 3000);
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtDur(ms) {
+  if (!ms) return '—';
+  const s = Math.floor(ms/1000), m = Math.floor(s/60);
+  return `${m}:${String(s%60).padStart(2,'0')}`;
+}
+function fmtSec(s) {
+  s = Math.floor(s||0);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+function fmtTotalDur(ms) {
+  const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Detection ──────────────────────────────────────────────────────────────
+async function detectIpods() {
+  const btn = document.getElementById('detectBtn');
+  btn.disabled = true; btn.textContent = '🔍 Scanning…';
+  try {
+    const r = await fetch('/api/detect');
+    const d = await r.json();
+    const el = document.getElementById('ipodList');
+    el.innerHTML = '';
+    for (const ip of d.ipods) {
+      const c = document.createElement('div');
+      c.className = 'ipod-card' + (ip.mount === currentMount ? ' active' : '');
+      c.innerHTML = `<div class="name">🎵 ${esc(ip.name)}</div><div class="meta">${ip.track_count} tracks · ${esc(ip.mount)}</div>`;
+      c.onclick = () => selectIpod(ip.mount);
+      el.appendChild(c);
+    }
+    if (!d.ipods.length) toast('No iPod found — try entering the mount path manually', 'error');
+    else toast(`Found ${d.ipods.length} iPod(s)`, 'success');
+  } catch(e) { toast('Detection failed: '+e.message,'error'); }
+  btn.disabled = false; btn.textContent = '🔍 Detect iPod';
+}
+
+async function setManualMount() {
+  const mount = document.getElementById('manualMount').value.trim();
+  if (!mount) return;
+  const r = await fetch('/api/set-mount',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mount})});
+  const d = await r.json();
+  if (d.error) { toast(d.error,'error'); return; }
+  toast('iPod found!','success');
+  selectIpod(mount);
+}
+
+async function selectIpod(mount) {
+  currentMount = mount;
+  document.getElementById('conn-pill').textContent = mount;
+  document.getElementById('conn-pill').className = 'pill connected';
+  document.getElementById('statsSection').style.display = 'block';
+  await loadLibrary();
+}
+
+// ── Library ────────────────────────────────────────────────────────────────
+async function loadLibrary() {
+  if (!currentMount) return;
+  document.getElementById('mainPanel').innerHTML = `<div class="empty-state"><div class="big">⏳</div><h2>Reading ${allTracks.length ? allTracks.length+' tracks…' : 'library…'}</h2><p>Scanning audio files and reading tags…</p></div>`;
+  try {
+    const r = await fetch(`/api/library?mount=${encodeURIComponent(currentMount)}`);
+    const d = await r.json();
+    if (d.error) { toast(d.error,'error'); return; }
+    allTracks = d.tracks;
+    updateStats(allTracks);
+    applyFilter();
+    toast(`Loaded ${d.total} tracks`,'success');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+function updateStats(tracks) {
+  document.getElementById('statTracks').textContent   = tracks.length;
+  document.getElementById('statArtists').textContent  = new Set(tracks.map(t=>t.artist)).size;
+  document.getElementById('statAlbums').textContent   = new Set(tracks.map(t=>t.album)).size;
+  document.getElementById('statDuration').textContent = fmtTotalDur(tracks.reduce((a,t)=>a+(t.duration||0),0));
+}
+
+function applyFilter() {
+  const q = (document.getElementById('searchInput')?.value||'').toLowerCase();
+  filteredTracks = q ? allTracks.filter(t=>
+    (t.title||'').toLowerCase().includes(q)||
+    (t.artist||'').toLowerCase().includes(q)||
+    (t.album||'').toLowerCase().includes(q)
+  ) : [...allTracks];
+  sortTracks(); renderTable();
+}
+
+function sortTracks() {
+  filteredTracks.sort((a,b)=>{
+    let av=a[sortKey]??'', bv=b[sortKey]??'';
+    if (typeof av==='string') av=av.toLowerCase();
+    if (typeof bv==='string') bv=bv.toLowerCase();
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+}
+
+function setSort(k) {
+  if (sortKey===k) sortDir*=-1; else { sortKey=k; sortDir=1; }
+  sortTracks(); renderTable();
+}
+
+function renderTable() {
+  const panel = document.getElementById('mainPanel');
+  document.getElementById('toolbar').style.display = allTracks.length > 0 ? 'flex' : 'none';
+  if (!filteredTracks.length) {
+    panel.innerHTML = `<div class="empty-state"><div class="big">🎶</div><h2>${allTracks.length===0?'No tracks on this iPod':'No results'}</h2><p>${allTracks.length===0?'Add songs using the panel on the left.':'Try a different search term.'}</p></div>`;
+    return;
+  }
+  const cols = [
+    ['title','Title'],['artist','Artist'],['album','Album'],
+    ['duration','Time'],['filetype','Format']
+  ];
+  panel.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th class="col-play"></th>
+          ${cols.map(([k,v])=>`<th class="${k===sortKey?'sorted':''}" onclick="setSort('${k}')">${v}${k===sortKey?(sortDir>0?' ↑':' ↓'):''}</th>`).join('')}
+          <th class="col-del"></th>
+        </tr></thead>
+        <tbody>
+          ${filteredTracks.map((t,i)=>`
+            <tr data-idx="${i}" class="${i===currentTrackIdx?'playing':''}">
+              <td class="col-play">
+                <button class="play-btn ${i===currentTrackIdx&&isPlaying?'active':''}"
+                        onclick="playTrack(${i},event)">
+                  ${i===currentTrackIdx&&isPlaying?'⏸':'▶'}
+                </button>
+              </td>
+              <td class="col-title" title="${esc(t.title)}">${esc(t.title)}</td>
+              <td class="col-artist" title="${esc(t.artist)}">${esc(t.artist||'—')}</td>
+              <td class="col-album" title="${esc(t.album)}">${esc(t.album||'—')}</td>
+              <td class="col-dur">${fmtDur(t.duration)}</td>
+              <td class="col-type"><span class="badge native">${esc(t.filetype||'?')}</span></td>
+              <td class="col-del"><button class="del-btn" onclick="deleteTrack('${esc(t.path)}',event)" title="Remove">✕</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Player ─────────────────────────────────────────────────────────────────
+function playTrack(idx, e) {
+  if (e) e.stopPropagation();
+  if (idx === currentTrackIdx && isPlaying) { audio.pause(); return; }
+  if (idx === currentTrackIdx && !isPlaying) { audio.play(); return; }
+
+  currentTrackIdx = idx;
+  const t = filteredTracks[idx];
+  audio.src = `/api/stream?path=${encodeURIComponent(t.path)}`;
+  audio.play();
+
+  document.getElementById('np-title').textContent  = t.title  || '—';
+  document.getElementById('np-artist').textContent = t.artist || '—';
+  document.getElementById('player-bar').className  = 'visible';
+}
+
+function togglePlay() {
+  if (isPlaying) audio.pause(); else audio.play();
+}
+function prevTrack() {
+  if (currentTrackIdx > 0) playTrack(currentTrackIdx - 1);
+}
+function nextTrack() {
+  if (currentTrackIdx < filteredTracks.length - 1) playTrack(currentTrackIdx + 1);
+}
+function setVolume(v) { audio.volume = v; }
+function seekTo(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct  = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = pct * audio.duration;
+}
+
+audio.addEventListener('play',  () => { isPlaying = true;  updatePlayUI(); });
+audio.addEventListener('pause', () => { isPlaying = false; updatePlayUI(); });
+audio.addEventListener('ended', () => nextTrack());
+audio.addEventListener('timeupdate', () => {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('np-current').textContent   = fmtSec(audio.currentTime);
+  document.getElementById('np-total').textContent     = fmtSec(audio.duration);
+});
+
+function updatePlayUI() {
+  document.getElementById('playPauseBtn').textContent = isPlaying ? '⏸' : '▶';
+  renderTable();
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+async function deleteTrack(path, e) {
+  if (e) e.stopPropagation();
+  if (!confirm('Remove this track from the iPod?')) return;
+  const r = await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})});
+  const d = await r.json();
+  if (d.error) { toast(d.error,'error'); return; }
+  toast('Track removed','success');
+  await loadLibrary();
+}
+
+// ── Upload ─────────────────────────────────────────────────────────────────
+async function handleFiles(files) {
+  for (const file of files) {
+    const ext = '.'+file.name.split('.').pop().toLowerCase();
+    const item = {file, name: file.name, ext, status:'probing', meta:{}};
+    uploadQueue.push(item); renderQueue();
+    const form = new FormData(); form.append('file', file);
+    try {
+      const r = await fetch('/api/probe',{method:'POST',body:form});
+      const d = await r.json();
+      item.meta = d; item.status = d.needs_conversion ? 'convert' : 'ready';
+    } catch { item.status = 'ready'; }
+    renderQueue();
+  }
+  document.getElementById('uploadBtn').style.display = uploadQueue.length ? 'block' : 'none';
+}
+
+function renderQueue() {
+  document.getElementById('queue').innerHTML = uploadQueue.map(item => {
+    const bc = item.status==='done'?'done':item.status==='error'?'error':item.status==='uploading'?'uploading':item.status==='convert'?'convert':'native';
+    const bt = item.status==='done'?'✓ Added':item.status==='error'?'✗ Error':item.status==='uploading'?'⬆ Adding…':item.status==='convert'?'⚙ Convert':item.status==='probing'?'… Probing':'✓ Native';
+    const title = item.meta?.title || item.name.replace(/\.[^.]+$/,'');
+    return `<div class="queue-item"><div class="fn">${esc(title)}</div><div class="qmeta"><span class="badge ${bc}">${bt}</span><span style="font-size:10px;color:var(--sub);font-family:var(--mono)">${item.ext}</span></div></div>`;
+  }).join('');
+}
+
+async function uploadAll() {
+  if (!currentMount) { toast('No iPod selected','error'); return; }
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true; btn.textContent = '⬆ Adding…';
+  let added=0, failed=0;
+  for (const item of uploadQueue) {
+    if (item.status==='done') continue;
+    item.status='uploading'; renderQueue();
+    const form = new FormData();
+    form.append('file', item.file); form.append('mount', currentMount);
+    if (item.meta?.title)  form.append('title',  item.meta.title);
+    if (item.meta?.artist) form.append('artist', item.meta.artist);
+    if (item.meta?.album)  form.append('album',  item.meta.album);
+    try {
+      const r = await fetch('/api/add-track',{method:'POST',body:form});
+      const d = await r.json();
+      if (d.error) { item.status='error'; failed++; } else { item.status='done'; added++; }
+    } catch { item.status='error'; failed++; }
+    renderQueue();
+  }
+  btn.disabled=false; btn.textContent='⬆ Add All to iPod';
+  toast(added>0?`Added ${added} track(s)${failed?`, ${failed} failed`:''}`:  `All ${failed} failed`, added>0?'success':'error');
+  if (added>0) await loadLibrary();
+}
+
+
+// ── YouTube download ───────────────────────────────────────────────────────
+async function addFromYoutube() {
+  if (!currentMount) { toast('Connect an iPod first', 'error'); return; }
+  const url = document.getElementById('ytUrl').value.trim();
+  if (!url) { toast('Paste a YouTube URL first', 'error'); return; }
+  const btn = document.getElementById('ytBtn');
+  const status = document.getElementById('ytStatus');
+  btn.disabled = true; btn.textContent = '…';
+  status.className = 'yt-status loading';
+  status.textContent = '⏳ Downloading & converting… this may take a minute';
+  try {
+    const r = await fetch('/api/add-from-url', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({mount: currentMount, url})
+    });
+    const d = await r.json();
+    if (d.error) {
+      status.className = 'yt-status error';
+      status.textContent = '✕ ' + d.error;
+    } else {
+      status.className = 'yt-status success';
+      status.textContent = '✓ Added: ' + d.track.title + ' — ' + d.track.artist;
+      document.getElementById('ytUrl').value = '';
+      await loadLibrary();
+    }
+  } catch(e) {
+    status.className = 'yt-status error';
+    status.textContent = '✕ ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Add';
+}
+
+// ── Drag & Drop ────────────────────────────────────────────────────────────
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('hovering');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('hovering'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('hovering');handleFiles(e.dataTransfer.files);});
+</script>
+</body>
+</html>
